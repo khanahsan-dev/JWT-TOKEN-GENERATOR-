@@ -314,3 +314,58 @@ textarea:focus { outline: none; }
     25% { transform: translateX(-5px); }
     75% { transform: translateX(5px); }
 }
+
+/* --- Social Media Links --- */
+.social-links {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin: 1.5rem 0 0.5rem 0;
+    padding-top: 0.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.social-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border);
+    color: var(--text-sub);
+    font-size: 1.4rem;
+    text-decoration: none;
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.social-btn:hover {
+    transform: translateY(-4px);
+    color: white;
+}
+
+/* Brand Colors on Hover */
+.social-btn.tiktok:hover {
+    background: #000000;
+    border-color: #fe2c55;
+    box-shadow: 0 5px 15px rgba(254, 44, 85, 0.3);
+}
+
+.social-btn.youtube:hover {
+    background: #ff0000;
+    border-color: #ff0000;
+    box-shadow: 0 5px 15px rgba(255, 0, 0, 0.3);
+}
+
+.social-btn.discord:hover {
+    background: #5865F2;
+    border-color: #5865F2;
+    box-shadow: 0 5px 15px rgba(88, 101, 242, 0.3);
+}
+
+.social-btn.telegram:hover {
+    background: #24A1DE;
+    border-color: #24A1DE;
+    box-shadow: 0 5px 15px rgba(36, 161, 222, 0.3);
+}
