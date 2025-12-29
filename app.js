@@ -4,10 +4,14 @@ const passInput = document.getElementById("password");
 const rememberChk = document.getElementById("remember");
 const output = document.getElementById("output");
 const outputContainer = document.getElementById("outputContainer");
-const pasteBtn = document.getElementById("pasteClearBtn");
 const statusMsg = document.getElementById("status");
-const copyBtn = document.getElementById("copyBtn");
+
+/* Icon Elements */
 const eyeIcon = document.getElementById("eyeIcon");
+const pasteIcon = document.getElementById("pasteIcon");
+const pasteBtn = document.getElementById("pasteClearBtn");
+const btn = document.getElementById("submitBtn");
+const btnText = document.getElementById("btnText");
 
 /* --- Initialization --- */
 window.onload = () => {
@@ -23,7 +27,13 @@ window.onload = () => {
 function togglePassword() {
     const isPass = passInput.type === "password";
     passInput.type = isPass ? "text" : "password";
-    eyeIcon.textContent = isPass ? "🚫" : "👁️";
+    
+    // Toggle Icon Class
+    if (isPass) {
+        eyeIcon.className = "ri-eye-off-line";
+    } else {
+        eyeIcon.className = "ri-eye-line";
+    }
 }
 
 function passwordInputChanged() {
@@ -32,21 +42,29 @@ function passwordInputChanged() {
 }
 
 function updatePasteBtnState() {
-    // If text exists, show X (clear). If empty, show Clipboard (paste).
-    pasteBtn.textContent = passInput.value ? "❌" : "📋";
-    pasteBtn.title = passInput.value ? "Clear" : "Paste from Clipboard";
+    // If text exists, show Close (X). If empty, show Clipboard.
+    if (passInput.value) {
+        pasteIcon.className = "ri-close-line";
+        pasteBtn.title = "Clear";
+    } else {
+        pasteIcon.className = "ri-clipboard-line";
+        pasteBtn.title = "Paste from Clipboard";
+    }
 }
 
 async function pasteOrClear() {
     if (passInput.value) {
-        passInput.value = ""; // Clear
+        // Clear Action
+        passInput.value = "";
         passInput.focus();
     } else {
+        // Paste Action
         try {
             const text = await navigator.clipboard.readText();
             passInput.value = text;
         } catch (err) {
-            updateStatus("⚠️ Clipboard permission denied", "red");
+            updateStatus("⚠️ Clipboard blocked. Use Ctrl+V", "#f59e0b");
+            passInput.focus();
         }
     }
     updatePasteBtnState();
@@ -73,22 +91,21 @@ function saveIfRemembered() {
 async function fetchToken() {
     const uid = uidInput.value.trim();
     const password = passInput.value.trim();
-    const btn = document.getElementById("submitBtn");
 
     // Reset UI
     outputContainer.classList.remove("show");
-    copyBtn.style.display = "none";
     
     if (!uid || !password) {
-        updateStatus("❌ UID & Password required", "#ef4444");
+        updateStatus("❌ User ID & Password required", "#ef4444");
         shakeInput();
         return;
     }
 
     // Loading State
     btn.disabled = true;
-    btn.innerHTML = `<div class="spinner"></div> Fetching...`;
-    updateStatus("Connecting...", "#6366f1");
+    const originalBtnContent = btnText.innerHTML;
+    btnText.innerHTML = `<div class="spinner"></div> Fetching...`;
+    updateStatus("Connecting to server...", "#6366f1");
 
     // Proxy/API Logic
     const targetUrl = `https://raihan-access-to-jwt.vercel.app/token?uid=${encodeURIComponent(uid)}&password=${encodeURIComponent(password)}`;
@@ -101,12 +118,11 @@ async function fetchToken() {
         output.value = textData;
         
         if (res.ok) {
-            updateStatus("✅ Token fetched successfully", "#10b981");
+            updateStatus("Get your token below", "#10b981");
             outputContainer.classList.add("show");
-            copyBtn.style.display = "flex"; // Show copy button only on success
         } else {
-            updateStatus("❌ Fetch failed", "#ef4444");
-            outputContainer.classList.add("show"); // Show error in box
+            updateStatus(" Please entire a valid uid, and password", "#ef4444");
+            outputContainer.classList.add("show");
         }
 
     } catch (e) {
@@ -115,41 +131,37 @@ async function fetchToken() {
         outputContainer.classList.add("show");
     } finally {
         btn.disabled = false;
-        btn.innerHTML = "Get Token";
+        btnText.innerHTML = originalBtnContent;
     }
 }
 
 /* --- Copy Logic --- */
 function appCopyToken() {
     const text = output.value.trim();
+    const copyBtn = document.getElementById("copyBtn");
+    const originalHTML = copyBtn.innerHTML;
 
     if (!text) return;
 
     let tokenToCopy = text;
-
     try {
         const json = JSON.parse(text);
-        if (json.token) {
-            tokenToCopy = json.token;
-        }
-    } catch (e) { /* Not JSON, ignore */ }
+        if (json.token) tokenToCopy = json.token;
+    } catch (e) { /* Not JSON */ }
 
     navigator.clipboard.writeText(tokenToCopy)
         .then(() => {
-            const originalText = copyBtn.innerHTML;
-            copyBtn.innerHTML = "✅ Copied!";
-            copyBtn.style.background = "#d1fae5"; // Light green
+            copyBtn.innerHTML = `<i class="ri-check-line"></i> Copied`;
+            copyBtn.style.color = "#10b981";
             copyBtn.style.borderColor = "#10b981";
             
             setTimeout(() => {
-                copyBtn.innerHTML = originalText;
-                copyBtn.style.background = ""; 
+                copyBtn.innerHTML = originalHTML;
+                copyBtn.style.color = ""; 
                 copyBtn.style.borderColor = ""; 
             }, 2000);
         })
-        .catch(() => {
-            updateStatus("❌ Copy failed", "red");
-        });
+        .catch(() => updateStatus(" Copy failed", "red"));
 }
 
 /* --- Helpers --- */
@@ -164,42 +176,3 @@ function shakeInput() {
     container.offsetHeight; /* trigger reflow */
     container.style.animation = 'shake 0.4s';
 }
-async function pasteOrClear() {
-    // 1. If text exists, this button acts as a "Clear" button
-    if (passInput.value) {
-        passInput.value = ""; 
-        passInput.focus();
-        updatePasteBtnState();
-        saveIfRemembered();
-        return;
-    }
-
-    // 2. If empty, this button acts as a "Paste" button
-    try {
-        // Attempt to read from clipboard
-        const text = await navigator.clipboard.readText();
-        passInput.value = text;
-        updateStatus("", ""); // Clear any error messages
-    } catch (err) {
-        // 3. Fallback: If browser blocks access, just focus the input
-        // so the user can press Ctrl+V or Long-Press to paste manually.
-        console.error("Clipboard access denied:", err);
-        passInput.focus();
-        updateStatus("⚠️ Browser blocked auto-paste. Press Ctrl+V.", "#f59e0b");
-    }
-    
-    updatePasteBtnState();
-    saveIfRemembered();
-}
-// Inside fetchToken()
-const btnText = document.getElementById("btnText");
-const btn = document.getElementById("submitBtn");
-
-// When loading starts:
-btn.disabled = true;
-btnText.innerHTML = `<div class="spinner"></div> Fetching...`;
-
-// When loading ends (inside finally block):
-btn.disabled = false;
-btnText.innerHTML = "Get Token";
-
